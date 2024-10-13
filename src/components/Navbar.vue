@@ -3,14 +3,15 @@
     <!-- Navbar -->
     <nav class="navbar" :class="{ scrolled: isScrolled }">
       <div style="display: flex; justify-content: space-between; align-items: center; width: 90%; margin: auto;">
-  <div class="logo" style="width: 50px; height: 50px;">
+  <div class="logo" style="width: 70px; height: 70px;">
     <img src="../assets/image/logo.png" alt="ESSL Logo" style="width: 100%; height: 100%; object-fit: cover;" />
   </div>
   <ul class="nav-links">
-    <li v-for="(item, index) in navItems" :key="index">
+    <li v-for="(item, index) in navItems" :key="index"   >
       <a 
+      
         href="#" 
-        @click="setActiveNav(index)" 
+        @click="setActiveNav(index,item)" 
         :class="{ active: activeNavIndex === index }">
         {{ item }}
       </a>
@@ -28,68 +29,45 @@
         class="event-item" 
         v-for="(event, index) in events" 
         :key="index" 
-        @click="event === 'SCHOOLS' ? openFullScreen() : setActiveEvent(index)" 
+        @click="redirectToSchool(event)" 
         :class="{ active: activeEventIndex === index }">
          {{ event }}
       </div>
     </div>
 
     <!-- Full-Screen Overlay for Schools -->
-    <div v-if="isFullScreen" class="fullscreen-overlay">
-      <div class="close-icon" @click="closeFullScreen">X</div>
-      <div class="school-content">
-        <!-- Clickable Areas for Regions -->
-        <div class="school-item brooklyn" @click="openRegion('brooklyn')">BROOKLYN</div>
-        <div class="school-item manhattan" @click="openRegion('manhattan')">MANHATTAN</div>
-        <div class="school-item staten-island" @click="openRegion('staten-island')">STATEN ISLAND</div>
-        <div class="school-item queens" @click="openRegion('queens')">QUEENS</div>
-        <div class="school-item bronx" @click="openRegion('bronx')">BRONX</div>
-      </div>
-    </div>
-
+  
     <!-- District Screen for Each Region -->
-    <div v-if="isDistrictScreenVisible" class="district-screen">
-      <div class="close-icon" @click="closeDistrictScreen">X</div>
-      <h1>{{ currentRegion.toUpperCase() }}</h1>
-      <div class="districts-grid">
-        <div class="district-item" v-for="(district, index) in districts[currentRegion]" :key="index">
-          <div class="district-circle" >{{ district }}
-          <select>
-            <option value="">Select District</option>
-            <option value="school1">School 1</option>
-            <option value="school1">School 1</option>
-            <option value="school1">School 1</option>
-          </select>
+    <!-- District Screen for Each Region -->
 
-          </div>
-          
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: "NavbarEvents",
   data() {
     return {
-      events: ["EVENTS", "STANDINGS", "RESOURCES", "SCHOOLS", "VIDEO'S/MEDIA", "SPONSORS"], 
-      navItems: ['About Us', 'Sponsors', 'Contact'], 
-      activeNavIndex: 0, 
-      activeEventIndex: null, 
-      isFullScreen: false, 
-      isDistrictScreenVisible: false, 
-      currentRegion: "", 
+      events: ["EVENTS", "STANDINGS", "RESOURCES", "SCHOOLS", "VIDEO'S/MEDIA", "SPONSORS"],
+      navItems: ['About Us', 'Sponsors', 'Contact'],
+      activeNavIndex: 0,
+      activeEventIndex: null,
+      isFullScreen: false,
+      isDistrictScreenVisible: false,
+      currentRegion: "",
       districts: {
-        brooklyn: ["DISTRICT 13", "DISTRICT 14", "DISTRICT 15", "DISTRICT 16", "DISTRICT 17", "DISTRICT 18", "DISTRICT 19", "DISTRICT 20", "DISTRICT 21", "DISTRICT 22", "DISTRICT 23", "DISTRICT 32"],
-        manhattan: ["DISTRICT 1", "DISTRICT 2", "DISTRICT 3", "DISTRICT 4", "DISTRICT 5", "DISTRICT 6"],
+        brooklyn: ["DISTRICT 13", "DISTRICT 14", "DISTRICT 15"],
+        manhattan: ["DISTRICT 1", "DISTRICT 2", "DISTRICT 3"],
         "staten-island": ["DISTRICT 31"],
-        queens: ["DISTRICT 24", "DISTRICT 25", "DISTRICT 26", "DISTRICT 27", "DISTRICT 28", "DISTRICT 29", "DISTRICT 30"],
-        bronx: ["DISTRICT 7", "DISTRICT 8", "DISTRICT 9", "DISTRICT 10", "DISTRICT 11", "DISTRICT 12"],
+        queens: ["DISTRICT 24", "DISTRICT 25", "DISTRICT 26"],
+        bronx: ["DISTRICT 7", "DISTRICT 8", "DISTRICT 9"]
       },
-      district:['School A','School B'],
-      isScrolled: false // Track if user has scrolled
+      schools: [], // Holds the schools fetched from the API
+      filteredSchools: [], // Holds the filtered schools based on selected region
+      selectedDistrict: [],
+      isScrolled: false,
     };
   },
   mounted() {
@@ -99,32 +77,76 @@ export default {
     window.removeEventListener('scroll', this.handleScroll); // Clean up event listener
   },
   methods: {
-    setActiveNav(index) {
-      this.activeNavIndex = index; 
+    setActiveNav(index,item) {
+     
+      this.activeNavIndex = index;
+      this.$router.push({ path: `/${item}` });
     },
     setActiveEvent(index) {
-      this.activeEventIndex = index; 
+      this.activeEventIndex = index;
     },
     openFullScreen() {
-      this.isFullScreen = true; 
+      this.isFullScreen = true;
     },
     closeFullScreen() {
-      this.isFullScreen = false; 
+      this.isFullScreen = false;
     },
-    openRegion(region) {
-      this.isFullScreen = false; 
-      this.currentRegion = region; 
-      this.isDistrictScreenVisible = true; 
+    async openRegion(region) {
+      this.isFullScreen = false;
+      this.currentRegion = region;
+      this.isDistrictScreenVisible = true;
+
+      // Fetch schools based on the current region
+      await this.fetchSchools(region);
+    },
+    async opendistrict(region) {
+      this.isFullScreen = false;
+      this.currentRegion = region;
+      this.isDistrictScreenVisible = true;
+
+      // Fetch schools based on the current region
+      await this.fetchSchools(region);
     },
     closeDistrictScreen() {
-      this.isDistrictScreenVisible = false; 
+      this.isDistrictScreenVisible = false;
+      this.filteredSchools = []; // Clear filtered schools when closing the district screen
+    },
+    redirectToSchool(event) {
+      // Use Vue Router to navigate to the school-specific page
+      this.$router.push({ path: `/${event=='SCHOOLS'?'statpage':event}` });
     },
     handleScroll() {
       this.isScrolled = window.scrollY > 50; // Check if scroll position is greater than 50px
+    },
+    async fetchSchools(region) {
+  console.log(region);
+  try {
+    const response = await axios.get(`https://growlotusfintech.in/school-app-backend-main/api/schools`);
+    
+    // Ensure you're accessing the right structure in the API response
+    this.schools = response.data || []; // Adjust according to your response structure
+    console.log("All Schools:", this.schools);
+    
+    // Check if the region matches the school.city property
+    this.filteredSchools = this.schools.filter(school => {
+       
+
+               
+          if(school.city.toLowerCase() === region ){
+          
+         return school
+          }
+        });
+
+  
+    console.log("Selected District:", this.selectedDistrict); // Check the selected district
+    console.log("Filtered Schools:", this.filteredSchools); // Check the filtered schools
+  } catch (error) {
+    console.error("Error fetching schools:", error);
+  }
     }
   }
 };
-
 </script>
 
 <style scoped>
@@ -411,14 +433,19 @@ export default {
  text-align: center
 }
 
-.district-circle select{
-  height: 40px;
+select.district-circle{
+  /* height: 40px;
   width: 200px;
   margin-top: 10px;
   font-size: 1.1rem;
   background-color: #000;
   color: #fff;
   border: 1px solid #fff;
-  border-radius: 5px;
+  border-radius: 5px; */
+ padding: 10px 20px;
+ font-size: 1.2rem;
+ background-color: transparent;
+ color: #fff;
+ border-radius:5px ;
 }
 </style>

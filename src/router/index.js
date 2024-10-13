@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../components/Home.vue'
 import HelloWorld from '../components/HelloWorld.vue'
-import SponsorPage from '../components/SponsorPage.vue'
+import Sponsor from '../components/Sponsor.vue'
 import State from '../components/State.vue'
 import District from '../components/District.vue'
 import SchoolPage from '../components/SchoolPage.vue'
+import Event from '../components/Event.vue'
 const routes = [
   {
     path: '/',
@@ -18,7 +19,7 @@ const routes = [
   },{
     path:'/Sponsors',
     name:'Sponsors',
-    component:SponsorPage
+    component:Sponsor
   },
   {
     path:'/statpage',
@@ -32,6 +33,11 @@ const routes = [
     path: '/school/:id',
     name: 'SchoolDetails',
     component:SchoolPage
+  },
+  {
+    path: '/event',
+    name: 'event',
+    component:Event
   }
 ]
 
